@@ -1,0 +1,26 @@
+  name: Monitor
+  on:
+    schedule:
+      - cron: "25 * * * *"
+  env:
+    CARGO_TERM_COLOR: always
+  jobs:
+    check:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - uses: Swatinem/rust-cache@v2
+          with:
+            cache-all-crates: "true"
+        - name: Build
+          run: cargo build --verbose
+        - name: Check Balance
+          env:
+            TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+            TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+            NODE_URL_1: ${{ secrets.NODE_URL_1 }}
+            NODE_URL_137: ${{ secrets.NODE_URL_137 }}
+            OK_API_KEY: ${{ secrets.OK_API_KEY }}
+            OK_SECRET: ${{ secrets.OK_SECRET }}
+            OK_PASSPHRASE: ${{ secrets.OK_PASSPHRASE }}
+          run: cargo run --bin address-monitor
