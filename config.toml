@@ -1,0 +1,17 @@
+monitor_addresses = [
+    { name = "My Address", address = "0x461Fa03E15009DE866B0F6eC44E13e89B142CB61", alert_threshold = 3.0, symbol = "ETH", chain_id = 1 }
+]
+
+[exchange_difference]
+api_okx = "https://www.okx.com"
+api_hashkey = "https://api-pro.hashkey.com"
+
+[[exchange_difference.instruments]]
+base_ccy = "USDT"
+target_ccy = "ETH"
+threshold = 0.25
+
+[[exchange_difference.instruments]]
+base_ccy = "USDT"
+target_ccy = "BTC"
+threshold = 0.25
