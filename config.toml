@@ -9,9 +9,9 @@ api_hashkey = "https://api-pro.hashkey.com"
 [[exchange_difference.instruments]]
 base_ccy = "USDT"
 target_ccy = "ETH"
-threshold = 0.25
+threshold = 0.05
 
 [[exchange_difference.instruments]]
 base_ccy = "USDT"
 target_ccy = "BTC"
-threshold = 0.25
+threshold = 0.05
