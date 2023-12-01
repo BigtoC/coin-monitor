@@ -46,13 +46,7 @@ async fn okx_price(instruments: Instruments, url: String) -> Result<PriceResult,
     let okx = OkxConnector::new(api_key.clone(), secret_key.clone(), passphrase.clone());
     let timestamp = OffsetDateTime::now_utc();
     let signature = okx.sign("GET", &*uri.clone(), timestamp).unwrap();
-
-    let mut headers = http::header::HeaderMap::new();
-    headers.insert("OK-ACCESS-KEY", api_key.parse().unwrap());
-    headers.insert("OK-ACCESS-SIGN", signature.signature.parse().unwrap());
-    headers.insert("OK-ACCESS-TIMESTAMP", signature.timestamp.parse().unwrap());
-    headers.insert("OK-ACCESS-PASSPHRASE", passphrase.parse().unwrap());
-    headers.insert("Content-Type", "application/json".parse().unwrap());
+    let headers = okx.build_headers(signature).unwrap();
 
     let client = reqwest::Client::new();
     let response = client

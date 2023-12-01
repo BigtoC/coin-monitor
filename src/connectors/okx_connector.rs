@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use base64;
 use hmac::{Hmac, Mac};
+use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use thiserror::Error;
@@ -80,5 +81,16 @@ impl OkxConnector {
         let encoded_sign = base64::encode(mac.finalize().into_bytes());
 
         Ok(Signature { signature: encoded_sign, timestamp })
+    }
+
+    pub fn build_headers(&self, signature: Signature) -> Result<HeaderMap, ()> {
+        let mut headers = HeaderMap::new();
+        headers.insert("OK-ACCESS-KEY", self.api_key.parse().unwrap());
+        headers.insert("OK-ACCESS-SIGN", signature.signature.parse().unwrap());
+        headers.insert("OK-ACCESS-TIMESTAMP", signature.timestamp.parse().unwrap());
+        headers.insert("OK-ACCESS-PASSPHRASE", self.passphrase.parse().unwrap());
+        headers.insert("Content-Type", "application/json".parse().unwrap());
+
+        Ok(headers)
     }
 }
