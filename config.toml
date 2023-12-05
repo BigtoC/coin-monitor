@@ -5,6 +5,7 @@ monitor_addresses = [
 [exchange_difference]
 api_okx = "https://www.okx.com"
 api_hashkey = "https://api-pro.hashkey.com"
+api_mexc = "https://api.mexc.com"
 
 [[exchange_difference.instruments]]
 base_ccy = "USDT"

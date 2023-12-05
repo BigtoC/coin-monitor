@@ -19,6 +19,7 @@ pub struct MonitorAddress {
 pub struct ExchangeDifference {
     pub api_okx: String,
     pub api_hashkey: String,
+    pub api_mexc: String,
     pub instruments: Vec<Instruments>
 }
 
