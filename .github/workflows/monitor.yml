@@ -1,7 +1,7 @@
   name: Monitor
   on:
     schedule:
-      - cron: "25 * * * *"
+      - cron: "50 * * * *"
   env:
     CARGO_TERM_COLOR: always
   jobs:
@@ -23,4 +23,4 @@
             OK_API_KEY: ${{ secrets.OK_API_KEY }}
             OK_SECRET: ${{ secrets.OK_SECRET }}
             OK_PASSPHRASE: ${{ secrets.OK_PASSPHRASE }}
-          run: cargo run --bin address-monitor
+          run: cargo run --bin coin-monitor
