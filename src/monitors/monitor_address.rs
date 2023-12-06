@@ -37,7 +37,6 @@ pub async fn addresses_balances(monitor_addresses: Vec<MonitorAddress>) {
 
 async fn check_one_address(monitor_address: MonitorAddress) -> Result<f64, Box<dyn Error>> {
     let provider = build_ethers_provider(monitor_address.chain_id);
-    println!("{}", monitor_address.chain_id);
     let address = monitor_address.address;
 
     match provider.get_balance(address.parse::<Address>().unwrap(), None).await {
