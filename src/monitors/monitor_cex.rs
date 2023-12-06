@@ -1,5 +1,7 @@
-use std::env;
-use std::error::Error;
+use std::{
+    env,
+    error::Error
+};
 use time::OffsetDateTime;
 use http::HeaderMap;
 use tokio::join;
@@ -9,7 +11,10 @@ use crate::connectors::{
     hashkey_connector::SymbolPriceTicker as HkSymbolPriceTicker,
     mexc_connector::SymbolPriceTicker as MexcSymbolPriceTicker
 };
-use crate::utils::config_struct::{ExchangeDifference, Instruments};
+use crate::utils::{
+    config_struct::{ExchangeDifference, Instruments},
+    http_client::HttpClient
+};
 
 #[derive(Debug, Clone)]
 struct PriceResult {
@@ -20,6 +25,7 @@ struct PriceResult {
 
 pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
     for instrument in exchange_difference.instruments {
+        println!(">>> Start monitoring {:?}", instrument.clone());
 
         let (okx_result, hashkey_result, mexc_result) = join!(
             fetch_okx_price(instrument.clone(), exchange_difference.api_okx.clone()),
@@ -47,20 +53,18 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
 async fn fetch_hashkey_price(instruments: Instruments, url: String) -> Result<PriceResult, Box<dyn Error>> {
     let data_source = "HashKey".to_string();
     let target_ccy = instruments.target_ccy.to_ascii_uppercase();
-    let base_ccy = instruments.base_ccy.replace("USDT", "USD").to_ascii_uppercase();
+    let base_ccy = instruments.base_ccy
+        .replace("USDT", "USD")
+        .replace("USDC", "USD")
+        .to_ascii_uppercase();
     let inst_id = target_ccy + &*base_ccy;
 
     let uri = format!("/quote/v1/ticker/price?symbol={inst_id}");
     let mut headers = HeaderMap::new();
     headers.insert("accept", "application/json".parse().unwrap());
 
-    let client = reqwest::Client::new();
-    let response = client
-        .get(url + &*uri.clone())
-        .headers(headers)
-        .send()
-        .await
-        .unwrap();
+    let client = HttpClient::new(data_source.clone());
+    let response = client.send_request(url, uri, headers).await?;
 
     if response.status().is_success() {
         let parsed_response = response
@@ -86,13 +90,8 @@ async fn fetch_mexc_price(instruments: Instruments, url: String) -> Result<Price
     let mut headers = HeaderMap::new();
     headers.insert("Content-Type", "application/json".parse().unwrap());
 
-    let client = reqwest::Client::new();
-    let response = client
-        .get(url + &*uri.clone())
-        .headers(headers)
-        .send()
-        .await
-        .unwrap();
+    let client = HttpClient::new(data_source.clone());
+    let response = client.send_request(url, uri, headers).await?;
 
     if response.status().is_success() {
         let parsed_response = response
@@ -123,13 +122,8 @@ async fn fetch_okx_price(instruments: Instruments, url: String) -> Result<PriceR
     let signature = okx.sign("GET", &*uri.clone(), timestamp).unwrap();
     let headers = okx.build_headers(signature).unwrap();
 
-    let client = reqwest::Client::new();
-    let response = client
-        .get(url + &*uri.clone())
-        .headers(headers)
-        .send()
-        .await
-        .unwrap();
+    let client = HttpClient::new(data_source.clone());
+    let response = client.send_request(url, uri, headers).await?;
 
     if response.status().is_success() {
         let parsed_response = response
