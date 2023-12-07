@@ -1,34 +1,26 @@
-use std::{
-    env,
-    error::Error
-};
-use time::OffsetDateTime;
+use std::error::Error;
 use http::HeaderMap;
 use tokio::join;
 
-use crate::connectors::{
-    okx_connector::{OkxConnector, MarketTickerResponse},
-    hashkey_connector::SymbolPriceTicker as HkSymbolPriceTicker,
-    mexc_connector::SymbolPriceTicker as MexcSymbolPriceTicker
+use crate::exchanges::{
+    dto::PriceResult,
+    okx::{actor::OkxActor},
+    hashkey::connector::SymbolPriceTicker as HkSymbolPriceTicker,
+    mexc::connector::SymbolPriceTicker as MexcSymbolPriceTicker
 };
 use crate::utils::{
     config_struct::{ExchangeDifference, Instruments},
     http_client::HttpClient
 };
 
-#[derive(Debug, Clone)]
-struct PriceResult {
-    data_source: String,
-    instrument: String,
-    price: f32
-}
-
 pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
+    let okx = OkxActor::new();
+
     for instrument in exchange_difference.instruments {
         println!(">>> Start monitoring {:?}", instrument.clone());
 
         let (okx_result, hashkey_result, mexc_result) = join!(
-            fetch_okx_price(instrument.clone(), exchange_difference.api_okx.clone()),
+            okx.fetch_okx_price(instrument.clone(), exchange_difference.api_okx.clone()),
             fetch_hashkey_price(instrument.clone(), exchange_difference.api_hashkey.clone()),
             fetch_mexc_price(instrument.clone(), exchange_difference.api_mexc.clone()),
         );
@@ -102,44 +94,6 @@ async fn fetch_mexc_price(instruments: Instruments, url: String) -> Result<Price
         let price = parsed_response.clone().price;
         let price_number = price.parse::<f32>().expect(&*format!("[{data_source}] Failed to parse string to number"));
         return Ok(PriceResult { data_source, instrument: inst_id, price: price_number });
-    } else {
-        panic!("[{data_source}] {:?}", response)
-    }
-}
-
-async fn fetch_okx_price(instruments: Instruments, url: String) -> Result<PriceResult, Box<dyn Error>> {
-    let data_source = "OKX".to_string();
-    let target_ccy = instruments.target_ccy.to_ascii_uppercase();
-    let base_ccy = instruments.base_ccy.to_ascii_uppercase();
-    let inst_id = format!("{target_ccy}-{base_ccy}-SWAP");
-
-    let uri = format!("/api/v5/market/ticker?instId={inst_id}");
-    let api_key = env::var("OK_API_KEY").unwrap();
-    let secret_key = env::var("OK_SECRET").unwrap();
-    let passphrase = env::var("OK_PASSPHRASE").unwrap();
-    let okx = OkxConnector::new(api_key.clone(), secret_key.clone(), passphrase.clone());
-    let timestamp = OffsetDateTime::now_utc();
-    let signature = okx.sign("GET", &*uri.clone(), timestamp).unwrap();
-    let headers = okx.build_headers(signature).unwrap();
-
-    let client = HttpClient::new(data_source.clone());
-    let response = client.send_request(url, uri, headers).await?;
-
-    if response.status().is_success() {
-        let parsed_response = response
-            .json::<MarketTickerResponse>()
-            .await
-            .expect(&*format!("[{data_source}] Failed to deserialize response"));
-
-        if parsed_response.code == "0" {
-            let data = parsed_response.data.get(0).unwrap();
-            let price = data.get("last").unwrap();
-            let price_number = price.parse::<f32>().expect(&*format!("[{data_source}] Failed to parse string to number"));
-
-            return Ok(PriceResult { data_source, instrument: inst_id, price: price_number });
-        } else {
-            panic!("[{data_source}] {:?}", parsed_response.msg)
-        }
     } else {
         panic!("[{data_source}] {:?}", response)
     }
