@@ -18,8 +18,8 @@ pub struct MexcActor {
 
 impl MexcActor {
     pub fn new() -> Self {
-        let api_key = env::var("MEXC_API_KEY").expect("Environment variable OK_API_KEY not found");
-        let secret_key = env::var("MEXC_SECRET").expect("Environment variable OK_SECRET not found");
+        let api_key = env::var("MEXC_API_KEY").expect("Environment variable MEXC_API_KEY not found");
+        let secret_key = env::var("MEXC_SECRET_KEY").expect("Environment variable MEXC_SECRET_KEY not found");
         let data_source = "MEXC".to_string();
 
         Self { api_key, secret_key, data_source }
