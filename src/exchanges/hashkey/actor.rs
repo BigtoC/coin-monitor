@@ -3,6 +3,7 @@ use std::error::Error;
 use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use crate::exchanges::dto::PriceResult;
+use crate::exchanges::hashkey::connector::SymbolPriceTicker;
 use crate::utils::config_struct::Instruments;
 use crate::utils::http_client::HttpClient;
 
@@ -43,7 +44,7 @@ impl HashKeyActor {
 
         if response.status().is_success() {
             let parsed_response = response
-                .json::<Vec<crate::exchanges::hashkey::connector::SymbolPriceTicker>>()
+                .json::<Vec<SymbolPriceTicker>>()
                 .await
                 .unwrap();
 
