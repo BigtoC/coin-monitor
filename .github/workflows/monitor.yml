@@ -24,7 +24,7 @@
             OK_SECRET: ${{ secrets.OK_SECRET }}
             OK_PASSPHRASE: ${{ secrets.OK_PASSPHRASE }}
             HASHKEY_API_KEY: ${{ secrets.HASHKEY_API_KEY }}
-            HASHKEY_SECRET: ${{ secrets.HASHKEY_SECRET }}
+            HASHKEY_SECRET_KEY: ${{ secrets.HASHKEY_SECRET_KEY }}
             MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
             MEXC_SECRET: ${{ secrets.MEXC_SECRET }}
           run: cargo run --bin coin-monitor
