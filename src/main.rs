@@ -20,7 +20,8 @@ async fn main() {
 
     tokio::join!(
         monitors::monitor_address::addresses_balances(config.monitor_addresses),
-        monitors::monitor_cex::exchange_prices(config.exchange_difference)
+        monitors::monitor_cex::exchange_prices(config.exchange_difference),
+        monitors::monitor_ip::monitor_ip()
     );
 
     let elapsed = now.elapsed();
