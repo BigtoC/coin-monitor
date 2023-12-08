@@ -38,8 +38,9 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
 
         let target_exchange_price = hashkey_result.unwrap().clone().price;
         let price_difference = target_exchange_price - max_result.price;
-        let percent = price_difference / target_exchange_price;
-        println!("{} vs HashKey ({}) => [Difference: {price_difference}], [percent: {percent}] \n", max_result.data_source, max_result.instrument)
+        let percent_rate = price_difference / target_exchange_price;
+        let percent_str = percent_rate * 100_f32;
+        println!("{} vs HashKey ({}) => [Difference: {price_difference}], [percent: {percent_str}%] \n", max_result.data_source, max_result.instrument)
     }
 }
 
