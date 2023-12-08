@@ -20,7 +20,7 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
         println!(">>> Start monitoring {:?}", instrument.clone());
 
         let (okx_result, hashkey_result, mexc_result) = join!(
-            okx.fetch_okx_price(instrument.clone(), exchange_difference.api_okx.clone()),
+            okx.fetch_price(instrument.clone(), exchange_difference.api_okx.clone()),
             fetch_hashkey_price(instrument.clone(), exchange_difference.api_hashkey.clone()),
             fetch_mexc_price(instrument.clone(), exchange_difference.api_mexc.clone()),
         );

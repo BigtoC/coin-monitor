@@ -31,7 +31,7 @@ impl OkxActor {
 
     }
 
-    pub async fn fetch_okx_price(&self, instruments: Instruments, url: String) -> Result<PriceResult, Box<dyn Error>> {
+    pub async fn fetch_price(&self, instruments: Instruments, url: String) -> Result<PriceResult, Box<dyn Error>> {
         let target_ccy = instruments.target_ccy.to_ascii_uppercase();
         let base_ccy = instruments.base_ccy.to_ascii_uppercase();
         let inst_id = format!("{target_ccy}-{base_ccy}-SWAP");
