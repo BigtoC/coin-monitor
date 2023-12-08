@@ -26,5 +26,5 @@
             HASHKEY_API_KEY: ${{ secrets.HASHKEY_API_KEY }}
             HASHKEY_SECRET_KEY: ${{ secrets.HASHKEY_SECRET_KEY }}
             MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
-            MEXC_SECRET: ${{ secrets.MEXC_SECRET }}
+            MEXC_SECRET_KEY: ${{ secrets.MEXC_SECRET_KEY }}
           run: cargo run --bin coin-monitor
