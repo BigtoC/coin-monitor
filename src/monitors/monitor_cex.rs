@@ -6,7 +6,7 @@ use crate::exchanges::{
     dto::PriceResult,
     okx::{actor::OkxActor},
     hashkey::connector::SymbolPriceTicker as HkSymbolPriceTicker,
-    mexc::connector::SymbolPriceTicker as MexcSymbolPriceTicker
+    mexc::{actor::MexcActor}
 };
 use crate::utils::{
     config_struct::{ExchangeDifference, Instruments},
@@ -15,6 +15,7 @@ use crate::utils::{
 
 pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
     let okx = OkxActor::new();
+    let mexc = MexcActor::new();
 
     for instrument in exchange_difference.instruments {
         println!(">>> Start monitoring {:?}", instrument.clone());
@@ -22,7 +23,7 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
         let (okx_result, hashkey_result, mexc_result) = join!(
             okx.fetch_price(instrument.clone(), exchange_difference.api_okx.clone()),
             fetch_hashkey_price(instrument.clone(), exchange_difference.api_hashkey.clone()),
-            fetch_mexc_price(instrument.clone(), exchange_difference.api_mexc.clone()),
+            mexc.fetch_price(instrument.clone(), exchange_difference.api_mexc.clone()),
         );
 
         println!("OKX: {:?}", okx_result);
@@ -65,33 +66,6 @@ async fn fetch_hashkey_price(instruments: Instruments, url: String) -> Result<Pr
             .unwrap();
 
         let price = parsed_response.get(0).unwrap().clone().p;
-        let price_number = price.parse::<f32>().expect(&*format!("[{data_source}] Failed to parse string to number"));
-        return Ok(PriceResult { data_source, instrument: inst_id, price: price_number });
-    } else {
-        panic!("[{data_source}] {:?}", response)
-    }
-}
-
-async fn fetch_mexc_price(instruments: Instruments, url: String) -> Result<PriceResult, Box<dyn Error>> {
-    let data_source = "MEXC".to_string();
-    let target_ccy = instruments.target_ccy.to_ascii_uppercase();
-    let base_ccy = instruments.base_ccy.to_ascii_uppercase();
-    let inst_id = target_ccy + &*base_ccy;
-
-    let uri = format!("/api/v3/ticker/price?symbol={inst_id}");
-    let mut headers = HeaderMap::new();
-    headers.insert("Content-Type", "application/json".parse().unwrap());
-
-    let client = HttpClient::new(data_source.clone());
-    let response = client.send_request(url, uri, headers).await?;
-
-    if response.status().is_success() {
-        let parsed_response = response
-            .json::<MexcSymbolPriceTicker>()
-            .await
-            .unwrap();
-
-        let price = parsed_response.clone().price;
         let price_number = price.parse::<f32>().expect(&*format!("[{data_source}] Failed to parse string to number"));
         return Ok(PriceResult { data_source, instrument: inst_id, price: price_number });
     } else {
