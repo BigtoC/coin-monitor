@@ -3,6 +3,7 @@ use std::error::Error;
 use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use crate::exchanges::dto::PriceResult;
+use crate::exchanges::mexc::connector::SymbolPriceTicker;
 use crate::utils::config_struct::Instruments;
 use crate::utils::http_client::HttpClient;
 
@@ -40,7 +41,7 @@ impl MexcActor {
 
         if response.status().is_success() {
             let parsed_response = response
-                .json::<crate::exchanges::mexc::connector::SymbolPriceTicker>()
+                .json::<SymbolPriceTicker>()
                 .await
                 .unwrap();
 
