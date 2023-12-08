@@ -1,6 +1,6 @@
 extern crate dotenv;
 mod blockchain;
-mod connectors;
+mod exchanges;
 mod utils;
 mod monitors;
 
