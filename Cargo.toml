@@ -23,5 +23,3 @@ tokio = { version = "1", features = ["full"] }
 base64 = "0.13.1"
 hmac = "0.12.1"
 sha2 = "0.10.6"
-ipnet = { version = "2", features = ["serde"] }
-
