@@ -10,7 +10,7 @@ use crate::utils::http_client::HttpClient;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use crate::exchanges::number_utils::calculate_price_with_trading_fee;
+use crate::utils::number_utils::calculate_price_with_trading_fee;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MexcActor {

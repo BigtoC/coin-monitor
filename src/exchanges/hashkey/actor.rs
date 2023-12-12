@@ -6,10 +6,10 @@ use crate::exchanges::hashkey::connector::SymbolPriceTicker;
 use crate::utils::config_struct::{Exchanges, Instruments};
 use crate::utils::http_client::HttpClient;
 use crate::utils::error::HttpError;
+use crate::utils::number_utils::calculate_price_with_trading_fee;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use crate::exchanges::number_utils::calculate_price_with_trading_fee;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HashKeyActor {

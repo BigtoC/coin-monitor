@@ -3,9 +3,11 @@ use tokio::join;
 use crate::exchanges::{
     okx::{actor::OkxActor},
     hashkey::{actor::HashKeyActor},
-    mexc::{actor::MexcActor}
+    mexc::{actor::MexcActor},
+
 };
 use crate::utils::config_struct::{ExchangeDifference, Exchanges};
+use crate::utils::number_utils::find_max_price_result;
 
 pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
     let okx = OkxActor::new();
@@ -27,9 +29,7 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
         println!("HashKey: {:?}", hashkey_result);
         println!("MEXC: {:?}", mexc_result);
 
-        let mut results = [okx_result.unwrap(), mexc_result.unwrap()];
-        results.sort_by(|a, b| b.price.total_cmp(&a.price));
-        let max_result = results.get(0).unwrap();
+        let max_result = find_max_price_result(vec!(okx_result.unwrap(), mexc_result.unwrap()));
 
         println!("The height price is {:?}", max_result);
 
