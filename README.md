@@ -19,3 +19,4 @@ Monitor cryptocurrency related data
   * Hashkey [API](https://hashkeypro-apidoc.readme.io/reference/introduction)
   * OKX [API](https://www.okx.com/docs-v5/en/#overview)
   * MEXC [API](https://mexcdevelop.github.io/apidocs/spot_v3_en/#introduction)
+* Cargo test [guide](https://doc.rust-lang.org/cargo/guide/tests.html)
