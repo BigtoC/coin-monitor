@@ -3,7 +3,8 @@ use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-use crate::exchanges::signer::{SignError, sign};
+use crate::exchanges::signer::sign;
+use crate::utils::error::SignError;
 
 /// Http response of /api/v5/market/ticker
 #[derive(Debug, Clone, Deserialize, Serialize)]

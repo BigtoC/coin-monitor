@@ -1,7 +1,8 @@
 use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use crate::exchanges::signer::{sign, SignError};
+use crate::exchanges::signer::sign;
+use crate::utils::error::SignError;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SymbolPriceTicker {
