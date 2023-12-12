@@ -10,7 +10,7 @@ use crate::utils::http_client::HttpClient;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use crate::exchanges::number_utils::calculate_price_with_fee;
+use crate::exchanges::number_utils::calculate_price_with_trading_fee;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MexcActor {
@@ -50,13 +50,13 @@ impl MexcActor {
                 .json::<SymbolPriceTicker>()
                 .await
                 .unwrap();
-            
-            let price = calculate_price_with_fee(
-                data_source.clone(), 
-                parsed_response.clone().price, 
+
+            let price = calculate_price_with_trading_fee(
+                data_source.clone(),
+                parsed_response.clone().price,
                 exchange_config.clone().fee_rate
             );
-            
+
             Ok(PriceResult { data_source, instrument: inst_id, price })
         } else {
             eprintln!("[{data_source}] {:?}", response);

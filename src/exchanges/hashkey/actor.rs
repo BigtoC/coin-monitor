@@ -9,7 +9,7 @@ use crate::utils::error::HttpError;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use crate::exchanges::number_utils::calculate_price_with_fee;
+use crate::exchanges::number_utils::calculate_price_with_trading_fee;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HashKeyActor {
@@ -53,7 +53,7 @@ impl HashKeyActor {
                 .await
                 .unwrap();
 
-            let price = calculate_price_with_fee(
+            let price = calculate_price_with_trading_fee(
                 data_source.clone(),
                 parsed_response.get(0).unwrap().clone().p,
                 exchange_config.clone().fee_rate

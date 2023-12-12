@@ -9,7 +9,7 @@ use crate::utils::http_client::HttpClient;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use crate::exchanges::number_utils::calculate_price_with_fee;
+use crate::exchanges::number_utils::calculate_price_with_trading_fee;
 use crate::utils::error::HttpError;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -60,12 +60,12 @@ impl OkxActor {
             if parsed_response.code == "0" {
                 let data = parsed_response.data.get(0).unwrap();
 
-                let price = calculate_price_with_fee(
+                let price = calculate_price_with_trading_fee(
                     data_source.clone(),
                     data.get("last").unwrap().to_string(),
                     exchange_config.clone().fee_rate
                 );
-                
+
                 Ok(PriceResult { data_source: self.data_source.clone(), instrument: inst_id, price })
             } else {
                 eprintln!("[{}] {:?}", self.data_source.clone(), parsed_response.msg);
