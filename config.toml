@@ -3,9 +3,20 @@ monitor_addresses = [
 ]
 
 [exchange_difference]
-api_okx = "https://www.okx.com"
-api_hashkey = "https://api-pro.hashkey.com"
-api_mexc = "https://api.mexc.com"
+[[exchange_difference.exchanges]]
+name = "OKX"
+url = "https://www.okx.com"
+fee_rate = 0.07 # percent
+
+[[exchange_difference.exchanges]]
+name = "HashKey"
+url = "https://api-pro.hashkey.com"
+fee_rate = 0.0 # percent
+
+[[exchange_difference.exchanges]]
+name = "MEXC"
+url = "https://api.mexc.com"
+fee_rate = 0.0 # percent
 
 [[exchange_difference.instruments]]
 base_ccy = "USDC"

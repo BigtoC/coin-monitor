@@ -17,10 +17,15 @@ pub struct MonitorAddress {
 
 #[derive(Deserialize, Clone)]
 pub struct ExchangeDifference {
-    pub api_okx: String,
-    pub api_hashkey: String,
-    pub api_mexc: String,
+    pub exchanges: Vec<Exchanges>,
     pub instruments: Vec<Instruments>
+}
+
+#[derive(Deserialize, Clone)]
+pub struct Exchanges {
+    pub name: String,
+    pub url: String,
+    pub fee_rate: f32
 }
 
 #[derive(Deserialize, Clone, Debug)]
