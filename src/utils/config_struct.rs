@@ -27,5 +27,4 @@ pub struct ExchangeDifference {
 pub struct Instruments {
     pub base_ccy: String,
     pub target_ccy: String,
-    pub threshold: f32
 }

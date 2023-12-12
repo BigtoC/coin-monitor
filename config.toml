@@ -10,9 +10,7 @@ api_mexc = "https://api.mexc.com"
 [[exchange_difference.instruments]]
 base_ccy = "USDC"
 target_ccy = "ETH"
-threshold = 0.05
 
 [[exchange_difference.instruments]]
 base_ccy = "USDC"
 target_ccy = "BTC"
-threshold = 0.05
