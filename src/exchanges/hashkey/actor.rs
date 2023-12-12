@@ -3,12 +3,13 @@ use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use crate::exchanges::dto::PriceResult;
 use crate::exchanges::hashkey::connector::SymbolPriceTicker;
-use crate::utils::config_struct::Instruments;
+use crate::utils::config_struct::{Exchanges, Instruments};
 use crate::utils::http_client::HttpClient;
 use crate::utils::error::HttpError;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use crate::exchanges::number_utils::calculate_price_with_fee;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HashKeyActor {
@@ -26,11 +27,11 @@ impl HashKeyActor {
         let api_key = env::var("HASHKEY_API_KEY").expect("Environment variable HASHKEY_API_KEY not found");
         let secret_key = env::var("HASHKEY_SECRET_KEY").expect("Environment variable HASHKEY_SECRET_KEY not found");
         let data_source = "HashKey".to_string();
-    
+
         Self { api_key, secret_key, data_source }
     }
 
-    pub async fn fetch_price(&self, instruments: Instruments, url: String) -> Result<PriceResult, HttpError> {
+    pub async fn fetch_price(&self, instruments: Instruments, exchange_config: Exchanges) -> Result<PriceResult, HttpError> {
         let data_source = "HashKey".to_string();
         let target_ccy = instruments.target_ccy.to_ascii_uppercase();
         let base_ccy = instruments.base_ccy
@@ -44,7 +45,7 @@ impl HashKeyActor {
         headers.insert("accept", "application/json".parse().unwrap());
 
         let client = HttpClient::new(data_source.clone());
-        let response = client.send_request(url, uri, headers).await?;
+        let response = client.send_request(exchange_config.clone().url, uri, headers).await?;
 
         return if response.status().is_success() {
             let parsed_response = response
@@ -52,9 +53,13 @@ impl HashKeyActor {
                 .await
                 .unwrap();
 
-            let price = parsed_response.get(0).unwrap().clone().p;
-            let price_number = price.parse::<f32>().expect(&*format!("[{data_source}] Failed to parse string to number"));
-            Ok(PriceResult { data_source, instrument: inst_id, price: price_number })
+            let price = calculate_price_with_fee(
+                data_source.clone(),
+                parsed_response.get(0).unwrap().clone().p,
+                exchange_config.clone().fee_rate
+            );
+
+            Ok(PriceResult { data_source, instrument: inst_id, price })
         } else {
             eprintln!("[{data_source}] {:?}", response);
             Err(HttpError::ResponseError)
