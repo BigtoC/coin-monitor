@@ -1,12 +1,16 @@
 use std::env;
-use std::error::Error;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use crate::exchanges::dto::PriceResult;
 use crate::exchanges::okx::connector::{MarketTickerResponse, OkxConnector};
-use crate::utils::config_struct::Instruments;
+use crate::utils::config_struct::{Exchanges, Instruments};
 use crate::utils::http_client::HttpClient;
+
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+use crate::utils::number_utils::calculate_price_with_trading_fee;
+use crate::utils::error::HttpError;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct OkxActor {
@@ -20,6 +24,7 @@ pub struct OkxActor {
     pub data_source: String
 }
 
+#[cfg_attr(test, automock)]
 impl OkxActor {
     pub fn new() -> Self {
         let api_key = env::var("OK_API_KEY").expect("Environment variable OK_API_KEY not found");
@@ -31,7 +36,8 @@ impl OkxActor {
 
     }
 
-    pub async fn fetch_price(&self, instruments: Instruments, url: String) -> Result<PriceResult, Box<dyn Error>> {
+    pub async fn fetch_price(&self, instruments: Instruments, exchange_config: Exchanges) -> Result<PriceResult, HttpError> {
+        let data_source = self.data_source.clone();
         let target_ccy = instruments.target_ccy.to_ascii_uppercase();
         let base_ccy = instruments.base_ccy.to_ascii_uppercase();
         let inst_id = format!("{target_ccy}-{base_ccy}-SWAP");
@@ -43,9 +49,9 @@ impl OkxActor {
         let headers = okx.build_headers(signature).unwrap();
 
         let client = HttpClient::new(self.data_source.clone());
-        let response = client.send_request(url, uri, headers).await?;
+        let response = client.send_request(exchange_config.clone().url, uri, headers).await?;
 
-        if response.status().is_success() {
+        return if response.status().is_success() {
             let parsed_response = response
                 .json::<MarketTickerResponse>()
                 .await
@@ -53,15 +59,21 @@ impl OkxActor {
 
             if parsed_response.code == "0" {
                 let data = parsed_response.data.get(0).unwrap();
-                let price = data.get("last").unwrap();
-                let price_number = price.parse::<f32>().expect(&*format!("[{}] Failed to parse string to number", self.data_source.clone()));
 
-                return Ok(PriceResult { data_source: self.data_source.clone(), instrument: inst_id, price: price_number });
+                let price = calculate_price_with_trading_fee(
+                    data_source.clone(),
+                    data.get("last").unwrap().to_string(),
+                    exchange_config.clone().fee_rate
+                );
+
+                Ok(PriceResult { data_source: self.data_source.clone(), instrument: inst_id, price })
             } else {
-                panic!("[{}] {:?}", self.data_source.clone(), parsed_response.msg)
+                eprintln!("[{}] {:?}", self.data_source.clone(), parsed_response.msg);
+                Err(HttpError::ResponseDataError)
             }
         } else {
-            panic!("[{}] {:?}", self.data_source.clone(), response)
+            eprintln!("[{data_source}] {:?}", response);
+            Err(HttpError::ResponseError)
         }
     }
 }

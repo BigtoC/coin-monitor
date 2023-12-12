@@ -3,6 +3,7 @@ mod blockchain;
 mod exchanges;
 mod utils;
 mod monitors;
+mod unittest;
 
 use crate::utils::config_struct::Config;
 

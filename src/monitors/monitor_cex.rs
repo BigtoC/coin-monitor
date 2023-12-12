@@ -3,9 +3,11 @@ use tokio::join;
 use crate::exchanges::{
     okx::{actor::OkxActor},
     hashkey::{actor::HashKeyActor},
-    mexc::{actor::MexcActor}
+    mexc::{actor::MexcActor},
+
 };
-use crate::utils::config_struct::ExchangeDifference;
+use crate::utils::config_struct::{ExchangeDifference, Exchanges};
+use crate::utils::number_utils::find_max_price_result;
 
 pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
     let okx = OkxActor::new();
@@ -15,19 +17,19 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
     for instrument in exchange_difference.instruments {
         println!(">>> Start monitoring {:?}", instrument.clone());
 
-        let (okx_result, hashkey_result, mexc_result) = join!(
-            okx.fetch_price(instrument.clone(), exchange_difference.api_okx.clone()),
-            hashkey.fetch_price(instrument.clone(), exchange_difference.api_hashkey.clone()),
-            mexc.fetch_price(instrument.clone(), exchange_difference.api_mexc.clone()),
+        let all_results = join!(
+            okx.fetch_price(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "OKX")),
+            hashkey.fetch_price(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "HashKey")),
+            mexc.fetch_price(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "MEXC")),
         );
+
+        let (okx_result, hashkey_result, mexc_result) = all_results;
 
         println!("OKX: {:?}", okx_result);
         println!("HashKey: {:?}", hashkey_result);
         println!("MEXC: {:?}", mexc_result);
 
-        let mut results = [okx_result.unwrap(), mexc_result.unwrap()];
-        results.sort_by(|a, b| b.price.total_cmp(&a.price));
-        let max_result = results.get(0).unwrap();
+        let max_result = find_max_price_result(vec!(okx_result.unwrap(), mexc_result.unwrap()));
 
         println!("The height price is {:?}", max_result);
 
@@ -37,4 +39,11 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
         let percent_str = percent_rate * 100_f32;
         println!("{} vs HashKey ({}) => [Difference: {price_difference}], [percent: {percent_str}%] \n", max_result.data_source, max_result.instrument)
     }
+}
+
+fn find_exchange_config(list: Vec<Exchanges>, name: &str) -> Exchanges {
+    return list.iter()
+        .find(|item| item.name.to_ascii_uppercase() == name.to_ascii_uppercase())
+        .expect(&*format!("Exchange config of {name} not found"))
+        .clone()
 }
