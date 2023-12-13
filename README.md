@@ -1,4 +1,6 @@
 # coin-monitor
+[![Test Monitor](https://github.com/BigtoC/coin-monitor/actions/workflows/test.yml/badge.svg)](https://github.com/BigtoC/coin-monitor/actions/workflows/test.yml)
+[![Monitor](https://github.com/BigtoC/coin-monitor/actions/workflows/monitor.yml/badge.svg)](https://github.com/BigtoC/coin-monitor/actions/workflows/monitor.yml)
 Monitor cryptocurrency related data
 
 ## Usages
