@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use crate::exchanges::signer::sign;

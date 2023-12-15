@@ -1,6 +1,6 @@
+use reqwest::header::HeaderMap;
 use std::collections::HashMap;
 use std::error::Error;
-use http::HeaderMap;
 use std::net::Ipv4Addr;
 
 use crate::utils::http_client::HttpClient;

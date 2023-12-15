@@ -1,5 +1,7 @@
+use base64::{Engine as _, engine::general_purpose};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
+
 use crate::utils::error::SignError;
 
 type HmacSha256 = Hmac<Sha256>;
@@ -10,5 +12,5 @@ pub fn sign(raw_sign: String, secret_key: String) -> Result<String, SignError> {
         .map_err(|_| SignError::SecretKeyLength).unwrap();
     mac.update(raw_sign.as_bytes());
 
-    Ok(base64::encode(mac.finalize().into_bytes()))
+    Ok(general_purpose::STANDARD.encode(mac.finalize().into_bytes()))
 }

@@ -27,7 +27,7 @@ impl HttpClient {
             .send()
             .await
             .map_err(|error| {
-                eprintln!("{}", error);
+                eprintln!("[{} error] {}", self.data_source, error);
                 HttpError::RequestError
             })
     }

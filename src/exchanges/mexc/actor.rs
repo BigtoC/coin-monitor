@@ -1,5 +1,5 @@
+use reqwest::header::HeaderMap;
 use std::env;
-use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 
 use crate::exchanges::dto::PriceResult;
