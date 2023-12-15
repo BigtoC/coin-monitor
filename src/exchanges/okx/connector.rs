@@ -1,5 +1,5 @@
+use reqwest::header::HeaderMap;
 use std::collections::HashMap;
-use http::HeaderMap;
 use serde::{Deserialize, Serialize};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
