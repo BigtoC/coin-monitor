@@ -63,7 +63,7 @@ impl OkxActor {
                 let price = calculate_price_with_trading_fee(
                     data_source.clone(),
                     data.get("last").unwrap().to_string(),
-                    exchange_config.clone().fee_rate
+                    exchange_config.clone().trading_fee_rate
                 );
 
                 Ok(PriceResult { data_source: self.data_source.clone(), instrument: inst_id, price })

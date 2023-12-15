@@ -56,7 +56,7 @@ impl HashKeyActor {
             let price = calculate_price_with_trading_fee(
                 data_source.clone(),
                 parsed_response.get(0).unwrap().clone().p,
-                exchange_config.clone().fee_rate
+                exchange_config.clone().trading_fee_rate
             );
 
             Ok(PriceResult { data_source, instrument: inst_id, price })

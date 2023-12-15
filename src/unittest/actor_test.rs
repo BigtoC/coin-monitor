@@ -57,9 +57,9 @@ async fn test_fetch_price() {
   let mock_okx = MockOkxActor::new();
   let mock_mexc = MockMexcActor::new();
 
-  let hashkey_result = mock_hashkey.fetch_price(inst.clone(), Exchanges { name: "HashKey".to_string(), fee_rate: 0.0, url: url.clone() }).await.unwrap();
-  let okx_result = mock_okx.fetch_price(inst.clone(), Exchanges { name: "OKX".to_string(), fee_rate: 0.0, url: url.clone() }).await.unwrap();
-  let mexc_result = mock_mexc.fetch_price(inst.clone(), Exchanges { name: "MEXC".to_string(), fee_rate: 0.0, url: url.clone() }).await.unwrap();
+  let hashkey_result = mock_hashkey.fetch_price(inst.clone(), Exchanges { name: "HashKey".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
+  let okx_result = mock_okx.fetch_price(inst.clone(), Exchanges { name: "OKX".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
+  let mexc_result = mock_mexc.fetch_price(inst.clone(), Exchanges { name: "MEXC".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
 
   assert_eq!(5.0, hashkey_result.price);
   assert_eq!(4.0, okx_result.price);
