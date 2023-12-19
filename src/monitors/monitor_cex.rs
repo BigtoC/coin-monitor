@@ -7,7 +7,7 @@ use crate::exchanges::{
 
 };
 use crate::utils::config_struct::{ExchangeDifference, Exchanges};
-use crate::utils::number_utils::find_max_price_result;
+use crate::utils::number_utils::find_lowest_price_result;
 
 pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
     let okx = OkxActor::new();
@@ -29,15 +29,15 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
         println!("HashKey: {:?}", hashkey_result);
         println!("MEXC: {:?}", mexc_result);
 
-        let max_result = find_max_price_result(vec!(okx_result.unwrap(), mexc_result.unwrap()));
+        let lowest_result = find_lowest_price_result(vec!(okx_result.unwrap(), mexc_result.unwrap()));
 
-        println!("The height price is {:?}", max_result);
+        println!("The lowest price is {:?}", lowest_result);
 
         let target_exchange_price = hashkey_result.unwrap().clone().price;
-        let price_difference = target_exchange_price - max_result.price;
+        let price_difference = target_exchange_price - lowest_result.price;
         let percent_rate = price_difference / target_exchange_price;
         let percent_str = percent_rate * 100_f32;
-        println!("{} vs HashKey ({}) => [Difference: {price_difference}], [percent: {percent_str}%] \n", max_result.data_source, max_result.instrument)
+        println!("{} vs HashKey ({}) => [Difference: {price_difference}], [percent: {percent_str}%] \n", lowest_result.data_source, lowest_result.instrument)
     }
 }
 

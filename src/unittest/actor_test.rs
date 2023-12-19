@@ -8,7 +8,7 @@ use crate::exchanges::{
 #[cfg(test)]
 use crate::utils::{
   config_struct::{Exchanges, Instruments},
-  number_utils::find_max_price_result
+  number_utils::find_lowest_price_result
 };
 
 
@@ -65,5 +65,5 @@ async fn test_fetch_price() {
   assert_eq!(4.0, okx_result.price);
   assert_eq!(3.0, mexc_result.price);
 
-  assert_eq!("OKX", find_max_price_result(vec!(okx_result, mexc_result)).data_source);
+  assert_eq!("OKX", find_lowest_price_result(vec!(okx_result, mexc_result)).data_source);
 }
