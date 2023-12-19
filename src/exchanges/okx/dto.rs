@@ -9,11 +9,16 @@ pub struct ApiResponse<T> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CcyData {
-    pub canWd: bool,
+    #[serde(rename = "canWd")]
+    pub can_wd: bool,
     pub ccy: String,
     pub chain: String,
-    pub minWd: String,
-    pub minFee: String,
-    pub maxFee: String,
-    pub minWdUnlockConfirm: String,
+    #[serde(rename = "minWd")]
+    pub min_wd: String,
+    #[serde(rename = "minFee")]
+    pub min_fee: String,
+    #[serde(rename = "maxFee")]
+    pub max_fee: String,
+    #[serde(rename = "minWdUnlockConfirm")]
+    pub min_wd_unlock_confirm: String,
 }
