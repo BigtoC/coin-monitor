@@ -65,5 +65,5 @@ async fn test_fetch_price() {
   assert_eq!(4.0, okx_result.price);
   assert_eq!(3.0, mexc_result.price);
 
-  assert_eq!("OKX", find_lowest_price_result(vec!(okx_result, mexc_result)).data_source);
+  assert_eq!("MEXC", find_lowest_price_result(vec!(okx_result, mexc_result)).data_source);
 }
