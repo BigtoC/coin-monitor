@@ -8,7 +8,7 @@ use crate::exchanges::{
 #[cfg(test)]
 use crate::utils::{
   config_struct::{Exchanges, Instruments},
-  number_utils::find_max_price_result
+  number_utils::find_lowest_price_result
 };
 
 
@@ -57,13 +57,13 @@ async fn test_fetch_price() {
   let mock_okx = MockOkxActor::new();
   let mock_mexc = MockMexcActor::new();
 
-  let hashkey_result = mock_hashkey.fetch_price(inst.clone(), Exchanges { name: "HashKey".to_string(), fee_rate: 0.0, url: url.clone() }).await.unwrap();
-  let okx_result = mock_okx.fetch_price(inst.clone(), Exchanges { name: "OKX".to_string(), fee_rate: 0.0, url: url.clone() }).await.unwrap();
-  let mexc_result = mock_mexc.fetch_price(inst.clone(), Exchanges { name: "MEXC".to_string(), fee_rate: 0.0, url: url.clone() }).await.unwrap();
+  let hashkey_result = mock_hashkey.fetch_price(inst.clone(), Exchanges { name: "HashKey".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
+  let okx_result = mock_okx.fetch_price(inst.clone(), Exchanges { name: "OKX".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
+  let mexc_result = mock_mexc.fetch_price(inst.clone(), Exchanges { name: "MEXC".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
 
   assert_eq!(5.0, hashkey_result.price);
   assert_eq!(4.0, okx_result.price);
   assert_eq!(3.0, mexc_result.price);
 
-  assert_eq!("OKX", find_max_price_result(vec!(okx_result, mexc_result)).data_source);
+  assert_eq!("MEXC", find_lowest_price_result(vec!(okx_result, mexc_result)).data_source);
 }

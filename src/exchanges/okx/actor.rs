@@ -1,14 +1,14 @@
+use std::collections::HashMap;
 use std::env;
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 
 use crate::exchanges::dto::PriceResult;
-use crate::exchanges::okx::connector::{MarketTickerResponse, OkxConnector};
+use crate::exchanges::okx::connector::OkxConnector;
 use crate::utils::config_struct::{Exchanges, Instruments};
-use crate::utils::http_client::HttpClient;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use crate::exchanges::okx::dto::CcyData;
 use crate::utils::number_utils::calculate_price_with_trading_fee;
 use crate::utils::error::HttpError;
 
@@ -44,36 +44,32 @@ impl OkxActor {
 
         let uri = format!("/api/v5/market/ticker?instId={inst_id}");
         let okx = OkxConnector::new(self.api_key.clone(), self.secret_key.clone(), self.passphrase.clone());
-        let timestamp = OffsetDateTime::now_utc();
-        let signature = okx.sign("GET", &*uri.clone(), timestamp).unwrap();
-        let headers = okx.build_headers(signature).unwrap();
 
-        let client = HttpClient::new(self.data_source.clone());
-        let response = client.send_request(exchange_config.clone().url, uri, headers).await?;
+        let data_vec = okx.http_client::<HashMap<String, String>>(exchange_config.url.clone(), uri).await?;
+        let data = data_vec.get(0).unwrap();
 
-        return if response.status().is_success() {
-            let parsed_response = response
-                .json::<MarketTickerResponse>()
-                .await
-                .expect(&*format!("[{}] Failed to deserialize response", self.data_source.clone()));
+        let original_price = data.get("last").unwrap().to_string();
+        let price = calculate_price_with_trading_fee(
+            data_source.clone(),
+            original_price.clone(),
+            exchange_config.clone().trading_fee_rate
+        );
+        println!("[{data_source}] {target_ccy} price: [Original: {original_price}] [With trading fee: {price}]");
 
-            if parsed_response.code == "0" {
-                let data = parsed_response.data.get(0).unwrap();
+        Ok(PriceResult { data_source: self.data_source.clone(), instrument: inst_id, price })
+    }
 
-                let price = calculate_price_with_trading_fee(
-                    data_source.clone(),
-                    data.get("last").unwrap().to_string(),
-                    exchange_config.clone().fee_rate
-                );
+    pub async fn fetch_ccy_data(&self, instruments: Instruments, exchange_config: Exchanges) -> Result<(), HttpError> {
+        let data_source = self.data_source.clone();
+        let target_ccy = instruments.target_ccy.to_ascii_uppercase();
+        let uri = format!("/api/v5/asset/currencies?ccy={target_ccy}");
 
-                Ok(PriceResult { data_source: self.data_source.clone(), instrument: inst_id, price })
-            } else {
-                eprintln!("[{}] {:?}", self.data_source.clone(), parsed_response.msg);
-                Err(HttpError::ResponseDataError)
-            }
-        } else {
-            eprintln!("[{data_source}] {:?}", response);
-            Err(HttpError::ResponseError)
-        }
+        let okx = OkxConnector::new(self.api_key.clone(), self.secret_key.clone(), self.passphrase.clone());
+
+        let data = okx.http_client::<CcyData>(exchange_config.url.clone(), uri).await?;
+
+        println!("[{data_source}] {:?}\n", data);
+
+        Ok(())
     }
 }

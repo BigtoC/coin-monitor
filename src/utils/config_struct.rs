@@ -25,7 +25,7 @@ pub struct ExchangeDifference {
 pub struct Exchanges {
     pub name: String,
     pub url: String,
-    pub fee_rate: f32
+    pub trading_fee_rate: f32
 }
 
 #[derive(Deserialize, Clone, Debug)]

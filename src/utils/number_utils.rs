@@ -5,7 +5,7 @@ pub fn calculate_price_with_trading_fee(data_source: String, price: String, fee_
     price_number * (1.0 + fee_rate / 100.0)
 }
 
-pub fn find_max_price_result(results: Vec<PriceResult>) -> PriceResult {
+pub fn find_lowest_price_result(results: Vec<PriceResult>) -> PriceResult {
     results.clone().sort_by(|a, b| b.price.total_cmp(&a.price));
-    results.get(0).unwrap().clone()
+    results.get(results.len() - 1).unwrap().clone()
 }
