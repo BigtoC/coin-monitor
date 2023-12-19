@@ -1,18 +1,11 @@
 use reqwest::header::HeaderMap;
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
+use crate::exchanges::okx::dto::ApiResponse;
 use crate::exchanges::signer::sign;
-use crate::utils::error::SignError;
-
-/// Http response of /api/v5/market/ticker
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct MarketTickerResponse {
-    pub code: String,
-    pub msg: String,
-    pub data: Vec<HashMap<String, String>>
-}
+use crate::utils::error::{HttpError, SignError};
+use crate::utils::http_client::HttpClient;
 
 /// The APIKey definition of OKX.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -23,6 +16,8 @@ pub struct OkxConnector {
     pub secret_key: String,
     /// OK_PASSPHRASE
     pub passphrase: String,
+
+    pub data_source: String
 }
 
 /// Signature
@@ -33,15 +28,17 @@ pub struct Signature {
     pub signature: String,
 
     /// Timestamp.
-    pub timestamp: String,
+    pub timestamp: String
 }
 
 impl OkxConnector {
     pub fn new(api_key: String, secret_key: String, passphrase: String) -> Self {
+        let data_source =  "OKX".to_string();
         Self {
             api_key,
             secret_key,
-            passphrase
+            passphrase,
+            data_source
         }
     }
 
@@ -70,5 +67,36 @@ impl OkxConnector {
         headers.insert("Content-Type", "application/json".parse().unwrap());
 
         Ok(headers)
+    }
+
+    pub async fn http_client<T>(&self, url: String, uri: String) -> Result<Vec<T>, HttpError>
+        where
+            T: serde::de::DeserializeOwned + Clone {
+        let data_source = "OKX".to_string();
+        let okx = OkxConnector::new(self.api_key.clone(), self.secret_key.clone(), self.passphrase.clone());
+        let timestamp = OffsetDateTime::now_utc();
+        let signature = okx.sign("GET", &*uri.clone(), timestamp).unwrap();
+        let headers = okx.build_headers(signature).unwrap();
+
+        let client = HttpClient::new(data_source.clone());
+        let response = client.send_request(url, uri, headers).await?;
+
+        return if response.status().is_success() {
+            let parsed_response = response
+                .json::<ApiResponse<T>>()
+                .await
+                .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
+
+            if parsed_response.code == "0" {
+                let data = parsed_response.data;
+                Ok(data.clone())
+            } else {
+                eprintln!("[{}] {:?}", data_source.clone(), parsed_response.msg);
+                Err(HttpError::ResponseDataError)
+            }
+        } else {
+            eprintln!("[{data_source}] {:?}", response);
+            Err(HttpError::ResponseError)
+        }
     }
 }
