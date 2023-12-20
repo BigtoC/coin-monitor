@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 use crate::exchanges::okx::dto::ApiResponse;
-use crate::exchanges::signer::sign;
+use crate::exchanges::signer::{sign, base64_encode};
 use crate::utils::error::{HttpError, SignError};
 use crate::utils::http_client::HttpClient;
 
@@ -53,9 +53,9 @@ impl OkxConnector {
 
         let raw_sign = timestamp.clone() + method + uri;
 
-        let encoded_sign = sign(raw_sign, self.secret_key.clone()).unwrap();
+        let raw_sign = sign(raw_sign, self.secret_key.clone()).unwrap();
 
-        Ok(Signature { signature: encoded_sign, timestamp })
+        Ok(Signature { signature: base64_encode(raw_sign), timestamp })
     }
 
     pub fn build_headers(&self, signature: Signature) -> Result<HeaderMap, ()> {
