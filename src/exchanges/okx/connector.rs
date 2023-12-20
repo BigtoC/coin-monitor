@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 use crate::exchanges::okx::dto::ApiResponse;
-use crate::exchanges::signer::sign;
+use crate::exchanges::signer::{sign, base64_encode};
 use crate::utils::error::{HttpError, SignError};
 use crate::utils::http_client::HttpClient;
 
@@ -53,9 +53,9 @@ impl OkxConnector {
 
         let raw_sign = timestamp.clone() + method + uri;
 
-        let encoded_sign = sign(raw_sign, self.secret_key.clone()).unwrap();
+        let raw_sign = sign(raw_sign, self.secret_key.clone()).unwrap();
 
-        Ok(Signature { signature: encoded_sign, timestamp })
+        Ok(Signature { signature: base64_encode(raw_sign), timestamp })
     }
 
     pub fn build_headers(&self, signature: Signature) -> Result<HeaderMap, ()> {
@@ -72,11 +72,10 @@ impl OkxConnector {
     pub async fn http_client<T>(&self, url: String, uri: String) -> Result<Vec<T>, HttpError>
         where
             T: serde::de::DeserializeOwned + Clone {
-        let data_source = "OKX".to_string();
-        let okx = OkxConnector::new(self.api_key.clone(), self.secret_key.clone(), self.passphrase.clone());
+        let data_source = self.data_source.clone();
         let timestamp = OffsetDateTime::now_utc();
-        let signature = okx.sign("GET", &*uri.clone(), timestamp).unwrap();
-        let headers = okx.build_headers(signature).unwrap();
+        let signature = self.sign("GET", &*uri.clone(), timestamp).unwrap();
+        let headers = self.build_headers(signature).unwrap();
 
         let client = HttpClient::new(data_source.clone());
         let response = client.send_request(url, uri, headers).await?;
@@ -88,8 +87,7 @@ impl OkxConnector {
                 .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
 
             if parsed_response.code == "0" {
-                let data = parsed_response.data;
-                Ok(data.clone())
+                Ok(parsed_response.data)
             } else {
                 eprintln!("[{}] {:?}", data_source.clone(), parsed_response.msg);
                 Err(HttpError::ResponseDataError)

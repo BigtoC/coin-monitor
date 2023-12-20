@@ -1,10 +1,12 @@
-use reqwest::header::HeaderMap;
 use std::env;
 use serde::{Deserialize, Serialize};
+
 use crate::exchanges::dto::PriceResult;
-use crate::exchanges::hashkey::connector::SymbolPriceTicker;
+use crate::exchanges::hashkey::{
+    connector::HashKeyConnector,
+    dto::SymbolPriceTicker
+};
 use crate::utils::config_struct::{Exchanges, Instruments};
-use crate::utils::http_client::HttpClient;
 use crate::utils::error::HttpError;
 use crate::utils::number_utils::calculate_price_with_trading_fee;
 
@@ -41,28 +43,16 @@ impl HashKeyActor {
         let inst_id = target_ccy + &*base_ccy;
 
         let uri = format!("/quote/v1/ticker/price?symbol={inst_id}");
-        let mut headers = HeaderMap::new();
-        headers.insert("accept", "application/json".parse().unwrap());
+        let hashkey = HashKeyConnector::new(self.api_key.clone(), self.secret_key.clone());
+        let data_vec = hashkey.http_client::<Vec<SymbolPriceTicker>>(exchange_config.clone().url, uri.clone()).await?;
+        let data = data_vec.get(0).unwrap();
 
-        let client = HttpClient::new(data_source.clone());
-        let response = client.send_request(exchange_config.clone().url, uri, headers).await?;
+        let price = calculate_price_with_trading_fee(
+            data_source.clone(),
+            data.clone().p,
+            exchange_config.clone().trading_fee_rate
+        );
 
-        return if response.status().is_success() {
-            let parsed_response = response
-                .json::<Vec<SymbolPriceTicker>>()
-                .await
-                .unwrap();
-
-            let price = calculate_price_with_trading_fee(
-                data_source.clone(),
-                parsed_response.get(0).unwrap().clone().p,
-                exchange_config.clone().trading_fee_rate
-            );
-
-            Ok(PriceResult { data_source, instrument: inst_id, price })
-        } else {
-            eprintln!("[{data_source}] {:?}", response);
-            Err(HttpError::ResponseError)
-        }
+        Ok(PriceResult { data_source, instrument: inst_id, price })
     }
 }
