@@ -1,14 +1,10 @@
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use crate::exchanges::signer::sign;
-use crate::utils::error::SignError;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SymbolPriceTicker {
-    pub s: String, // Symbol
-    pub p: String, // Price
-}
+use crate::exchanges::signer::sign;
+use crate::utils::error::{HttpError, SignError};
+use crate::utils::http_client::HttpClient;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Signature {
@@ -24,25 +20,29 @@ pub struct Signature {
 
 /// The APIKey definition of HashKey.
 #[derive(Debug, Clone, Deserialize, Serialize)]
-struct HashKeyConnector {
+pub struct HashKeyConnector {
     /// HASHKEY_API_KEY
     pub api_key: String,
     /// HASHKEY_SECRET_KEY
-    pub secret_key: String
+    pub secret_key: String,
+
+    pub data_source: String
 }
 
 impl HashKeyConnector {
     pub fn new(api_key: String, secret_key: String) -> Self {
-        Self { api_key, secret_key }
+        let data_source =  "HashKey".to_string();
+        Self { api_key, secret_key, data_source }
     }
 
-    pub fn sign(&self, uri: &str) -> Result<crate::exchanges::mexc::connector::Signature, SignError> {
+    pub fn sign(&self, uri: String) -> Result<Signature, SignError> {
         let timestamp = OffsetDateTime::now_utc().millisecond().to_string();
         let raw_sign = uri.to_owned() + timestamp.clone().as_str();
-        let encoded_sign = sign(raw_sign.clone(), self.secret_key.clone()).unwrap();
+        let encoded_sign = sign(raw_sign.clone(), self.secret_key.clone())
+            .expect(&*format!("Failed to create {} signature", self.data_source.clone()));
         let full_uri = raw_sign.clone() + "&signature=" + encoded_sign.as_str();
 
-        Ok(crate::exchanges::mexc::connector::Signature { signature: encoded_sign, timestamp, full_uri })
+        Ok(Signature { signature: encoded_sign, timestamp, full_uri })
     }
 
     pub fn build_headers(&self) -> Result<HeaderMap, ()> {
@@ -50,5 +50,32 @@ impl HashKeyConnector {
         headers.insert("X-HK-APIKEY", self.api_key.parse().unwrap());
         headers.insert("accept", "application/json".parse().unwrap());
         Ok(headers)
+    }
+
+    pub async fn http_client<T>(&self, url: String, uri: String) -> Result<T, HttpError>
+        where
+            T: serde::de::DeserializeOwned + Clone {
+        let data_source = self.data_source.clone();
+        let signature = self.sign(uri.clone()).unwrap();
+        let headers = self.build_headers().unwrap();
+
+        let client = HttpClient::new(data_source.clone());
+        let uri_with_sign = format!(
+            "{uri}&timestamp={}&signature={}", 
+            signature.timestamp.clone(),
+            signature.signature.clone()
+        );
+        let response = client.send_request(url, uri_with_sign, headers).await?;
+
+        return if response.status().is_success() {
+            let parsed_response = response
+                .json::<T>()
+                .await
+                .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
+            Ok(parsed_response.clone())
+        } else {
+            eprintln!("[{data_source}] {:?}", response);
+            Err(HttpError::ResponseError)
+        }
     }
 }
