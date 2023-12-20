@@ -1,16 +1,17 @@
-use reqwest::header::HeaderMap;
 use std::env;
 use serde::{Deserialize, Serialize};
 
 use crate::exchanges::dto::PriceResult;
-use crate::exchanges::mexc::connector::SymbolPriceTicker;
+use crate::exchanges::mexc::{
+    connector::MexcConnector,
+    dto::SymbolPriceTicker
+};
 use crate::utils::config_struct::{Exchanges, Instruments};
 use crate::utils::error::HttpError;
-use crate::utils::http_client::HttpClient;
+use crate::utils::number_utils::calculate_price_with_trading_fee;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use crate::utils::number_utils::calculate_price_with_trading_fee;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MexcActor {
@@ -39,28 +40,15 @@ impl MexcActor {
         let inst_id = target_ccy + &*base_ccy;
 
         let uri = format!("/api/v3/ticker/price?symbol={inst_id}");
-        let mut headers = HeaderMap::new();
-        headers.insert("Content-Type", "application/json".parse().unwrap());
 
-        let client = HttpClient::new(data_source.clone());
-        let response = client.send_request(exchange_config.clone().url, uri, headers).await?;
+        let mexc = MexcConnector::new(self.api_key.clone(), self.secret_key.clone());
+        let data = mexc.http_client::<SymbolPriceTicker>(exchange_config.clone().url, uri.clone(), false).await?;
+        let price = calculate_price_with_trading_fee(
+            data_source.clone(),
+            data.clone().price,
+            exchange_config.clone().trading_fee_rate
+        );
 
-        return if response.status().is_success() {
-            let parsed_response = response
-                .json::<SymbolPriceTicker>()
-                .await
-                .unwrap();
-
-            let price = calculate_price_with_trading_fee(
-                data_source.clone(),
-                parsed_response.clone().price,
-                exchange_config.clone().trading_fee_rate
-            );
-
-            Ok(PriceResult { data_source, instrument: inst_id, price })
-        } else {
-            eprintln!("[{data_source}] {:?}", response);
-            Err(HttpError::ResponseError)
-        }
+        Ok(PriceResult { data_source, instrument: inst_id, price })
     }
 }

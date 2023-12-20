@@ -1,14 +1,10 @@
 use reqwest::header::HeaderMap;
-use time::OffsetDateTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
-use crate::exchanges::signer::sign;
-use crate::utils::error::SignError;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SymbolPriceTicker {
-    pub symbol: String,
-    pub price: String,
-}
+use crate::exchanges::signer::{sign, hex_encode};
+use crate::utils::error::{HttpError, SignError};
+use crate::utils::http_client::HttpClient;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Signature {
@@ -24,26 +20,29 @@ pub struct Signature {
 
 /// The APIKey definition of MEXC.
 #[derive(Debug, Clone, Deserialize, Serialize)]
-struct MexcConnector {
+pub struct MexcConnector {
     /// MEXC_API_KEY
     pub api_key: String,
     /// MEXC_SECRET_KEY
-    pub secret_key: String
+    pub secret_key: String,
+
+    pub data_source: String,
 }
 
 impl MexcConnector {
     pub fn new(api_key: String, secret_key: String) -> Self {
-        Self {
-            api_key,
-            secret_key
-        }
+        let data_source = "MEXC".to_string();
+        Self { api_key, secret_key, data_source }
     }
 
-    pub fn sign(&self, uri: &str) -> Result<Signature, SignError> {
-        let timestamp = OffsetDateTime::now_utc().millisecond().to_string();
-        let raw_sign = uri.to_owned() + timestamp.clone().as_str();
-        let encoded_sign = sign(raw_sign.clone(), self.secret_key.clone()).unwrap();
-        let full_uri = raw_sign.clone() + "&signature=" + encoded_sign.as_str();
+    pub fn sign(&self, uri: String) -> Result<Signature, SignError> {
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis().to_string();
+        let total_parameters = uri.split("?").collect::<Vec<&str>>().get(1).unwrap().to_string();
+        let raw_str = total_parameters.clone() + "&timestamp=" + timestamp.clone().as_str();
+        let raw_sign = sign(raw_str.clone(), self.secret_key.clone())
+            .expect(&*format!("Failed to create {} signature", self.data_source.clone()));;
+        let encoded_sign = hex_encode(raw_sign);
+        let full_uri = uri.clone() + "&timestamp=" + timestamp.clone().as_str() + "&signature=" + &*encoded_sign.as_str();
 
         Ok(Signature { signature: encoded_sign, timestamp, full_uri })
     }
@@ -54,4 +53,54 @@ impl MexcConnector {
         headers.insert("Content-Type", "application/json".parse().unwrap());
         Ok(headers)
     }
+
+    pub async fn http_client<T>(&self, url: String, uri: String, need_sign: bool) -> Result<T, HttpError>
+        where
+            T: serde::de::DeserializeOwned + Clone {
+        let data_source = self.data_source.clone();
+        let headers = self.build_headers().unwrap();
+
+        let client = HttpClient::new(data_source.clone());
+
+        let final_uri: String = if need_sign {
+            self.sign(uri.clone()).unwrap().full_uri
+        } else {
+            uri
+        };
+        println!("{}", final_uri.clone());
+
+        let response = client.send_request(url, final_uri, headers).await?;
+
+        return if response.status().is_success() {
+            let parsed_response = response
+                .json::<T>()
+                .await
+                .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
+            Ok(parsed_response.clone())
+        } else {
+            eprintln!("[{data_source}] {:?}", response);
+            Err(HttpError::ResponseError)
+        };
+
+        // match client.send_request(url, final_uri, headers).await {
+        //     Ok(r) => {
+        //         println!("{:?}", r);
+        //         return if r.status().is_success() {
+        //             let parsed_response = r
+        //                 .json::<T>()
+        //                 .await
+        //                 .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
+        //             Ok(parsed_response.clone())
+        //         } else {
+        //             eprintln!("[{data_source}] {:?}", r);
+        //             Err(HttpError::ResponseError)
+        //         };
+        //     }
+        //     Err(e) => {
+        //         eprintln!("[{data_source}] {:?}", e);
+        //         Err(HttpError::ResponseError)
+        //     }
+        // }
+    }
 }
+

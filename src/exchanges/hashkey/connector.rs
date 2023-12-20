@@ -1,8 +1,8 @@
+use std::time::{SystemTime, UNIX_EPOCH};
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 
-use crate::exchanges::signer::sign;
+use crate::exchanges::signer::{sign, hex_encode};
 use crate::utils::error::{HttpError, SignError};
 use crate::utils::http_client::HttpClient;
 
@@ -36,11 +36,13 @@ impl HashKeyConnector {
     }
 
     pub fn sign(&self, uri: String) -> Result<Signature, SignError> {
-        let timestamp = OffsetDateTime::now_utc().millisecond().to_string();
-        let raw_sign = uri.to_owned() + timestamp.clone().as_str();
-        let encoded_sign = sign(raw_sign.clone(), self.secret_key.clone())
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis().to_string();
+        let total_parameters = uri.split("?").collect::<Vec<&str>>().get(1).unwrap().to_string();
+        let raw_str = total_parameters.clone() + "&timestamp=" + timestamp.clone().as_str();
+        let raw_sign = sign(raw_str.clone(), self.secret_key.clone())
             .expect(&*format!("Failed to create {} signature", self.data_source.clone()));
-        let full_uri = raw_sign.clone() + "&signature=" + encoded_sign.as_str();
+        let encoded_sign = hex_encode(raw_sign);
+        let full_uri = uri.clone() + "&signature=" + encoded_sign.as_str();
 
         Ok(Signature { signature: encoded_sign, timestamp, full_uri })
     }
@@ -60,11 +62,7 @@ impl HashKeyConnector {
         let headers = self.build_headers().unwrap();
 
         let client = HttpClient::new(data_source.clone());
-        let uri_with_sign = format!(
-            "{uri}&timestamp={}&signature={}", 
-            signature.timestamp.clone(),
-            signature.signature.clone()
-        );
+        let uri_with_sign = signature.full_uri;
         let response = client.send_request(url, uri_with_sign, headers).await?;
 
         return if response.status().is_success() {
