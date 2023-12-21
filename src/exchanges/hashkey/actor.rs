@@ -57,4 +57,13 @@ impl HashKeyActor {
 
         Ok(PriceResult { data_source, instrument: inst_id, price })
     }
+
+    pub async fn fetch_account(&self, instruments: Instruments, exchange_config: Exchanges) -> Result<(), HttpError> {
+        let uri = "/api/v1/account/checkApiKey".to_string();
+        let hashkey = HashKeyConnector::new(self.api_key.clone(), self.secret_key.clone());
+        let data = hashkey.http_client::<HashMap<String, String>>(exchange_config.clone().url, uri.clone(), "".to_string()).await?;
+        println!("HashKey account type: {:?}", data);
+
+        Ok(())
+    }
 }
