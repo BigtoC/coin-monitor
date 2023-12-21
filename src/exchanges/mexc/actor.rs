@@ -63,9 +63,11 @@ impl MexcActor {
         let data = mexc.http_client::<Vec<AllCcyInfo>>(exchange_config.url.clone(), uri, "".to_string(), true).await?;
 
         let coin_config_list = data.iter().find(|item| item.coin == target_ccy).unwrap();
-        let coin_config = coin_config_list.network_list.iter().find(|item| item.network.contains(instruments.withdrawal_chain.as_str())).unwrap();
-        println!("[{data_source}] {:?}", coin_config.clone());
+        let coin_config = coin_config_list.network_list.iter().find(
+            |item| item.network.to_ascii_uppercase().contains(instruments.withdrawal_chain.to_ascii_uppercase().as_str())
+        );
 
+        println!("[{data_source}] CCY Data: {:?}", coin_config.clone());
 
         Ok(())
     }

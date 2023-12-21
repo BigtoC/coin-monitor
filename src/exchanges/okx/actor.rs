@@ -67,8 +67,13 @@ impl OkxActor {
         let okx = OkxConnector::new(self.api_key.clone(), self.secret_key.clone(), self.passphrase.clone());
 
         let data = okx.http_client::<CcyData>(exchange_config.url.clone(), uri).await?;
+        let ccy_data = data.iter().find(
+            |item|
+                item.chain.to_ascii_uppercase().contains(instruments.withdrawal_chain.to_ascii_uppercase().as_str())
+                || item.chain.to_ascii_uppercase().contains(target_ccy.as_str())
+        );
 
-        println!("[{data_source}] {:?}\n", data);
+        println!("[{data_source}] CCY Data: {:?}\n", ccy_data);
 
         Ok(())
     }

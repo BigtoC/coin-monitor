@@ -25,6 +25,8 @@ pub struct CcyInfo {
     pub withdraw_max: String,
     #[serde(rename = "withdrawMin")]
     pub withdraw_min: String,
+    #[serde(rename = "minConfirm")]
+    pub min_confirm: i16,
     pub contract: Option<String>
 }
 
