@@ -7,6 +7,7 @@ pub struct ApiResponse<T> {
     pub data: Vec<T>
 }
 
+/// Reference: https://www.okx.com/docs-v5/en/#funding-account-rest-api-get-currencies
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CcyData {
     #[serde(rename = "canWd")]
@@ -21,4 +22,6 @@ pub struct CcyData {
     pub max_fee: String,
     #[serde(rename = "minWdUnlockConfirm")]
     pub min_wd_unlock_confirm: String,
+    #[serde(rename = "mainNet")]
+    pub mainnet: bool
 }

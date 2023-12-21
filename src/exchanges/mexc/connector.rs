@@ -35,14 +35,19 @@ impl MexcConnector {
         Self { api_key, secret_key, data_source }
     }
 
-    pub fn sign(&self, uri: String) -> Result<Signature, SignError> {
+    pub fn sign(&self, uri: String, parameters: String) -> Result<Signature, SignError> {
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis().to_string();
-        let total_parameters = uri.split("?").collect::<Vec<&str>>().get(1).unwrap().to_string();
-        let raw_str = total_parameters.clone() + "&timestamp=" + timestamp.clone().as_str();
-        let raw_sign = sign(raw_str.clone(), self.secret_key.clone())
+        let total_parameters: String = if parameters.is_empty() {
+            "timestamp=".to_string() + timestamp.clone().as_str()
+        } else {
+            parameters.clone() + "&timestamp=" + timestamp.clone().as_str()
+        };
+
+        let raw_sign = sign(total_parameters.clone(), self.secret_key.clone())
             .expect(&*format!("Failed to create {} signature", self.data_source.clone()));;
         let encoded_sign = hex_encode(raw_sign);
-        let full_uri = uri.clone() + "&timestamp=" + timestamp.clone().as_str() + "&signature=" + &*encoded_sign.as_str();
+
+        let full_uri = uri.clone() + "?" + total_parameters.clone().as_str() + "&signature=" + encoded_sign.as_str();
 
         Ok(Signature { signature: encoded_sign, timestamp, full_uri })
     }
@@ -54,7 +59,7 @@ impl MexcConnector {
         Ok(headers)
     }
 
-    pub async fn http_client<T>(&self, url: String, uri: String, need_sign: bool) -> Result<T, HttpError>
+    pub async fn http_client<T>(&self, url: String, uri: String, parameters: String, need_sign: bool) -> Result<T, HttpError>
         where
             T: serde::de::DeserializeOwned + Clone {
         let data_source = self.data_source.clone();
@@ -63,11 +68,14 @@ impl MexcConnector {
         let client = HttpClient::new(data_source.clone());
 
         let final_uri: String = if need_sign {
-            self.sign(uri.clone()).unwrap().full_uri
+            self.sign(uri.clone(), parameters).unwrap().full_uri
         } else {
-            uri
+            if parameters.is_empty() {
+                uri
+            } else {
+                uri + "?" + &*parameters
+            }
         };
-        println!("{}", final_uri.clone());
 
         let response = client.send_request(url, final_uri, headers).await?;
 
@@ -78,29 +86,9 @@ impl MexcConnector {
                 .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
             Ok(parsed_response.clone())
         } else {
-            eprintln!("[{data_source}] {:?}", response);
+            eprintln!("[{data_source}] Response Error {:?}", response);
             Err(HttpError::ResponseError)
         };
-
-        // match client.send_request(url, final_uri, headers).await {
-        //     Ok(r) => {
-        //         println!("{:?}", r);
-        //         return if r.status().is_success() {
-        //             let parsed_response = r
-        //                 .json::<T>()
-        //                 .await
-        //                 .expect(&*format!("[{}] Failed to deserialize response", data_source.clone()));
-        //             Ok(parsed_response.clone())
-        //         } else {
-        //             eprintln!("[{data_source}] {:?}", r);
-        //             Err(HttpError::ResponseError)
-        //         };
-        //     }
-        //     Err(e) => {
-        //         eprintln!("[{data_source}] {:?}", e);
-        //         Err(HttpError::ResponseError)
-        //     }
-        // }
     }
 }
 

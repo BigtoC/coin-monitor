@@ -32,4 +32,5 @@ pub struct Exchanges {
 pub struct Instruments {
     pub base_ccy: String,
     pub target_ccy: String,
+    pub withdrawal_chain: String
 }

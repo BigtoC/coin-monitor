@@ -12,6 +12,7 @@ use crate::utils::number_utils::calculate_price_with_trading_fee;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use crate::exchanges::mexc::dto::AllCcyInfo;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MexcActor {
@@ -39,10 +40,11 @@ impl MexcActor {
         let base_ccy = instruments.base_ccy.to_ascii_uppercase();
         let inst_id = target_ccy + &*base_ccy;
 
-        let uri = format!("/api/v3/ticker/price?symbol={inst_id}");
+        let uri = "/api/v3/ticker/price".to_string();
+        let parameters = format!("symbol={inst_id}");
 
         let mexc = MexcConnector::new(self.api_key.clone(), self.secret_key.clone());
-        let data = mexc.http_client::<SymbolPriceTicker>(exchange_config.clone().url, uri.clone(), false).await?;
+        let data = mexc.http_client::<SymbolPriceTicker>(exchange_config.clone().url, uri.clone(), parameters, false).await?;
         let price = calculate_price_with_trading_fee(
             data_source.clone(),
             data.clone().price,
@@ -50,5 +52,23 @@ impl MexcActor {
         );
 
         Ok(PriceResult { data_source, instrument: inst_id, price })
+    }
+
+    pub async fn fetch_ccy_info(&self, instruments: Instruments, exchange_config: Exchanges) -> Result<(), HttpError> {
+        let data_source = self.data_source.clone();
+        let target_ccy = instruments.target_ccy.to_ascii_uppercase();
+        let uri = "/api/v3/capital/config/getall".to_string();
+
+        let mexc = MexcConnector::new(self.api_key.clone(), self.secret_key.clone());
+        let data = mexc.http_client::<Vec<AllCcyInfo>>(exchange_config.url.clone(), uri, "".to_string(), true).await?;
+
+        let coin_config_list = data.iter().find(|item| item.coin == target_ccy).unwrap();
+        let coin_config = coin_config_list.network_list.iter().find(
+            |item| item.network.to_ascii_uppercase().contains(instruments.withdrawal_chain.to_ascii_uppercase().as_str())
+        );
+
+        println!("[{data_source}] CCY Data: {:?}", coin_config.clone());
+
+        Ok(())
     }
 }
