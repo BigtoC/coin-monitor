@@ -18,7 +18,8 @@ async fn test_fetch_price() {
 
   let inst = Instruments {
     base_ccy: "USDC".to_string(),
-    target_ccy: "BTC".to_string()
+    target_ccy: "BTC".to_string(),
+    withdrawal_chain: "Bitcoin".to_string()
   };
 
   let url = "https://some-url.org".to_string();
