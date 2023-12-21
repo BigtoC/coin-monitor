@@ -39,10 +39,11 @@ impl MexcActor {
         let base_ccy = instruments.base_ccy.to_ascii_uppercase();
         let inst_id = target_ccy + &*base_ccy;
 
-        let uri = format!("/api/v3/ticker/price?symbol={inst_id}");
+        let uri = "/api/v3/ticker/price".to_string();
+        let parameters = format!("symbol={inst_id}");
 
         let mexc = MexcConnector::new(self.api_key.clone(), self.secret_key.clone());
-        let data = mexc.http_client::<SymbolPriceTicker>(exchange_config.clone().url, uri.clone(), false).await?;
+        let data = mexc.http_client::<SymbolPriceTicker>(exchange_config.clone().url, uri.clone(), parameters, false).await?;
         let price = calculate_price_with_trading_fee(
             data_source.clone(),
             data.clone().price,

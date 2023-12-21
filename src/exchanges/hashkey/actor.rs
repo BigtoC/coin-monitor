@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use serde::{Deserialize, Serialize};
 
@@ -42,9 +43,10 @@ impl HashKeyActor {
             .to_ascii_uppercase();
         let inst_id = target_ccy + &*base_ccy;
 
-        let uri = format!("/quote/v1/ticker/price?symbol={inst_id}");
+        let uri = "/quote/v1/ticker/price".to_string();
+        let parameters = format!("symbol={inst_id}");
         let hashkey = HashKeyConnector::new(self.api_key.clone(), self.secret_key.clone());
-        let data_vec = hashkey.http_client::<Vec<SymbolPriceTicker>>(exchange_config.clone().url, uri.clone()).await?;
+        let data_vec = hashkey.http_client::<Vec<SymbolPriceTicker>>(exchange_config.clone().url, uri.clone(), parameters).await?;
         let data = data_vec.get(0).unwrap();
 
         let price = calculate_price_with_trading_fee(

@@ -35,14 +35,20 @@ impl HashKeyConnector {
         Self { api_key, secret_key, data_source }
     }
 
-    pub fn sign(&self, uri: String) -> Result<Signature, SignError> {
+    pub fn sign(&self, uri: String, parameters: String) -> Result<Signature, SignError> {
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis().to_string();
-        let total_parameters = uri.split("?").collect::<Vec<&str>>().get(1).unwrap().to_string();
-        let raw_str = total_parameters.clone() + "&timestamp=" + timestamp.clone().as_str();
-        let raw_sign = sign(raw_str.clone(), self.secret_key.clone())
+        let total_parameters: String = if parameters.is_empty() {
+            "timestamp=".to_string() + timestamp.clone().as_str()
+        } else {
+            parameters.clone() + "&timestamp=" + timestamp.clone().as_str()
+        };
+
+        let raw_sign = sign(total_parameters.clone(), self.secret_key.clone())
             .expect(&*format!("Failed to create {} signature", self.data_source.clone()));
+
         let encoded_sign = hex_encode(raw_sign);
-        let full_uri = uri.clone() + "&signature=" + encoded_sign.as_str();
+
+        let full_uri = uri.clone() + "?" + total_parameters.clone().as_str() + "&signature=" + encoded_sign.as_str();
 
         Ok(Signature { signature: encoded_sign, timestamp, full_uri })
     }
@@ -54,11 +60,11 @@ impl HashKeyConnector {
         Ok(headers)
     }
 
-    pub async fn http_client<T>(&self, url: String, uri: String) -> Result<T, HttpError>
+    pub async fn http_client<T>(&self, url: String, uri: String, parameters: String) -> Result<T, HttpError>
         where
             T: serde::de::DeserializeOwned + Clone {
         let data_source = self.data_source.clone();
-        let signature = self.sign(uri.clone()).unwrap();
+        let signature = self.sign(uri.clone(), parameters.clone()).unwrap();
         let headers = self.build_headers().unwrap();
 
         let client = HttpClient::new(data_source.clone());
