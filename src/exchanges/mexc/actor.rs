@@ -12,6 +12,7 @@ use crate::utils::number_utils::calculate_price_with_trading_fee;
 
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use crate::exchanges::mexc::dto::AllCcyInfo;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MexcActor {
@@ -51,5 +52,21 @@ impl MexcActor {
         );
 
         Ok(PriceResult { data_source, instrument: inst_id, price })
+    }
+
+    pub async fn fetch_ccy_info(&self, instruments: Instruments, exchange_config: Exchanges) -> Result<(), HttpError> {
+        let data_source = self.data_source.clone();
+        let target_ccy = instruments.target_ccy.to_ascii_uppercase();
+        let uri = "/api/v3/capital/config/getall".to_string();
+
+        let mexc = MexcConnector::new(self.api_key.clone(), self.secret_key.clone());
+        let data = mexc.http_client::<Vec<AllCcyInfo>>(exchange_config.url.clone(), uri, "".to_string(), true).await?;
+
+        let coin_config_list = data.iter().find(|item| item.coin == target_ccy).unwrap();
+        let coin_config = coin_config_list.network_list.iter().find(|item| item.network.contains(instruments.withdrawal_chain.as_str())).unwrap();
+        println!("[{data_source}] {:?}", coin_config.clone());
+
+
+        Ok(())
     }
 }
