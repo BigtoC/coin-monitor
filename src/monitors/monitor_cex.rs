@@ -25,7 +25,9 @@ pub async fn exchange_prices(exchange_difference: ExchangeDifference) {
 
         let (okx_result, hashkey_result, mexc_result) = all_results;
 
-        okx.fetch_ccy_data(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "OKX")).await.expect("OKX: panic message");
+        // okx.fetch_ccy_data(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "OKX")).await.expect("OKX: panic message");
+        // mexc.fetch_ccy_info(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "MEXC")).await.expect("MEXC: panic message");
+        // hashkey.fetch_account(instrument.clone(), find_exchange_config(exchange_difference.exchanges.clone(), "HashKey")).await.expect("MEXC: panic message");
 
         println!("OKX: {:?}", okx_result);
         println!("HashKey: {:?}", hashkey_result);
