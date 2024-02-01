@@ -8,7 +8,7 @@ use crate::exchanges::{
 #[cfg(test)]
 use crate::utils::{
   config_struct::{Exchanges, Instruments},
-  number_utils::find_lowest_price_result
+  number_utils::sort_price_result
 };
 
 
@@ -28,7 +28,7 @@ async fn test_fetch_price() {
   ctx_hashkey.expect().returning(|| {
     let mut mock = MockHashKeyActor::default();
     let result = Ok(
-      PriceResult { data_source: "HashKey".to_string(), instrument: "BTCUSDC".to_string(), price: 5.0 }
+      PriceResult { data_source: "HashKey".to_string(), instrument: "BTCUSDC".to_string(), price: 5.4 }
     );
     mock.expect_fetch_price().return_const(result);
     mock
@@ -38,7 +38,7 @@ async fn test_fetch_price() {
   ctx_okx.expect().returning(|| {
     let mut mock = MockOkxActor::default();
     let result = Ok(
-      PriceResult { data_source: "OKX".to_string(), instrument: "BTCUSDC".to_string(), price: 4.0 }
+      PriceResult { data_source: "OKX".to_string(), instrument: "BTCUSDC".to_string(), price: 4.1 }
     );
     mock.expect_fetch_price().return_const(result);
     mock
@@ -48,7 +48,7 @@ async fn test_fetch_price() {
   ctx_mexc.expect().returning(|| {
     let mut mock = MockMexcActor::default();
     let result = Ok(
-      PriceResult { data_source: "MEXC".to_string(), instrument: "BTCUSDC".to_string(), price: 3.0 }
+      PriceResult { data_source: "MEXC".to_string(), instrument: "BTCUSDC".to_string(), price: 3.2 }
     );
     mock.expect_fetch_price().return_const(result);
     mock
@@ -62,9 +62,13 @@ async fn test_fetch_price() {
   let okx_result = mock_okx.fetch_price(inst.clone(), Exchanges { name: "OKX".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
   let mexc_result = mock_mexc.fetch_price(inst.clone(), Exchanges { name: "MEXC".to_string(), trading_fee_rate: 0.0, url: url.clone() }).await.unwrap();
 
-  assert_eq!(5.0, hashkey_result.price);
-  assert_eq!(4.0, okx_result.price);
-  assert_eq!(3.0, mexc_result.price);
+  assert_eq!(5.4, hashkey_result.price);
+  assert_eq!(4.1, okx_result.price);
+  assert_eq!(3.2, mexc_result.price);
 
-  assert_eq!("MEXC", find_lowest_price_result(vec!(okx_result, mexc_result)).data_source);
+  let sorted_results = sort_price_result(vec!(Ok(okx_result), Ok(mexc_result), Ok(hashkey_result)));
+
+  assert_eq!("HashKey", sorted_results.get(0).unwrap().data_source);
+  assert_eq!("OKX", sorted_results.get(sorted_results.len() - 2).unwrap().data_source);
+  assert_eq!("MEXC", sorted_results.get(sorted_results.len() - 1).unwrap().data_source);
 }
