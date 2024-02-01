@@ -1,11 +1,17 @@
 use crate::exchanges::dto::PriceResult;
+use crate::utils::error::HttpError;
 
 pub fn calculate_price_with_trading_fee(data_source: String, price: String, fee_rate: f32) -> f32 {
     let price_number = price.parse::<f32>().expect(&*format!("[{data_source}] Failed to parse string to number"));
     price_number * (1.0 + fee_rate / 100.0)
 }
 
-pub fn find_lowest_price_result(results: Vec<PriceResult>) -> PriceResult {
-    results.clone().sort_by(|a, b| b.price.total_cmp(&a.price));
-    results.get(results.len() - 1).unwrap().clone()
+pub fn sort_price_result(all_results: Vec<Result<PriceResult, HttpError>>) -> Vec<PriceResult> {
+    let flattened_results: Vec<PriceResult> = all_results.clone()
+        .into_iter()
+        .flat_map(|x| x.ok())
+        .collect();
+
+    flattened_results.clone().sort_by(|a, b| b.price.total_cmp(&a.price));
+    return flattened_results
 }
