@@ -6,12 +6,13 @@ pub fn calculate_price_with_trading_fee(data_source: String, price: String, fee_
     price_number * (1.0 + fee_rate / 100.0)
 }
 
+/// Sort price result by price in descending order
 pub fn sort_price_result(all_results: Vec<Result<PriceResult, HttpError>>) -> Vec<PriceResult> {
-    let flattened_results: Vec<PriceResult> = all_results.clone()
+    let mut flattened_results: Vec<PriceResult> = all_results.clone()
         .into_iter()
         .flat_map(|x| x.ok())
         .collect();
 
-    flattened_results.clone().sort_by(|a, b| b.price.total_cmp(&a.price));
+    flattened_results.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap());
     return flattened_results
 }
