@@ -41,20 +41,22 @@ impl HashKeyActor {
             .replace("USDT", "USD")
             .replace("USDC", "USD")
             .to_ascii_uppercase();
-        let inst_id = target_ccy + &*base_ccy;
+        let inst_id = format!("{target_ccy}{base_ccy}");
 
         let uri = "/quote/v1/ticker/price".to_string();
         let parameters = format!("symbol={inst_id}");
         let hashkey = HashKeyConnector::new(self.api_key.clone(), self.secret_key.clone());
         let data_vec = hashkey.http_client::<Vec<SymbolPriceTicker>>(exchange_config.clone().url, uri.clone(), parameters).await?;
         let data = data_vec.get(0).unwrap();
+        let original_price = data.clone().p;
 
         let price = calculate_price_with_trading_fee(
             data_source.clone(),
-            data.clone().p,
+            original_price.clone(),
             exchange_config.clone().trading_fee_rate
         );
 
+        println!("[{data_source}] {target_ccy} price: [Original: {original_price}] [With trading fee: {price}]");
         Ok(PriceResult { data_source, instrument: inst_id, price })
     }
 
