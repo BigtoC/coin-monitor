@@ -6,12 +6,12 @@ monitor_addresses = [
 [[exchange_difference.exchanges]]
 name = "OKX"
 url = "https://www.okx.com"
-trading_fee_rate = 0.07 # percent
+trading_fee_rate = 0.0 # percent
 
 [[exchange_difference.exchanges]]
 name = "HashKey"
 url = "https://api-pro.hashkey.com"
-trading_fee_rate = 0.15 # percent
+trading_fee_rate = 0.0 # percent
 
 [[exchange_difference.exchanges]]
 name = "MEXC"
